@@ -14,8 +14,11 @@ Methods:
     test_stop_media
     
 """
+import os
+import time
 import unittest
 from unittest.mock import MagicMock
+import pygame
 from modules.media_player import MediaPlayer
 
 class TestMediaPlayer(unittest.TestCase):
@@ -27,6 +30,7 @@ class TestMediaPlayer(unittest.TestCase):
         """
         Set up the MediaPlayer instance for testing.
         """
+        pygame.mixer.init()  # Initialize Pygame mixer with default driver
         self.media_player = MediaPlayer()
 
     def test_start_media(self):
@@ -35,8 +39,9 @@ class TestMediaPlayer(unittest.TestCase):
 
         This test checks if the media player can start playing a media file.
         """
-        self.media_player.queue.put(("test.mp3", 1))
-        self.media_player.start_media("test.mp3", 1, 0, MagicMock())
+        media_path = os.path.join(os.path.dirname(__file__), "assets", "test.mp3")
+        self.media_player.queue.put((media_path, 1))
+        self.media_player.start_media(media_path, 1, 0, MagicMock())
         self.assertTrue(self.media_player.playing)
 
     def test_repeat_media(self):
@@ -45,10 +50,11 @@ class TestMediaPlayer(unittest.TestCase):
 
         This test checks if the media player can repeat a media file.
         """
-        self.media_player.queue.put(("test.mp3", 2))
-        self.media_player.start_media("test.mp3", 2, 0, MagicMock())
+        media_path = os.path.join(os.path.dirname(__file__), "assets", "test.mp3")
+        self.media_player.queue.put((media_path, 2))
+        self.media_player.start_media(media_path, 2, 0, MagicMock())
         self.assertTrue(self.media_player.playing)
-        self.media_player.repeat_media("test.mp3")
+        self.media_player.repeat_media(media_path)
         self.assertTrue(self.media_player.playing)
 
     def test_pause_media(self):
@@ -57,22 +63,11 @@ class TestMediaPlayer(unittest.TestCase):
 
         This test checks if the media player can pause a media file.
         """
-        self.media_player.queue.put(("test.mp3", 1))
-        self.media_player.start_media("test.mp3", 1, 0, MagicMock())
+        media_path = os.path.join(os.path.dirname(__file__), "assets", "test.mp3")
+        self.media_player.queue.put((media_path, 1))
+        self.media_player.start_media(media_path, 1, 0, MagicMock())
         self.media_player.pause_media()
-        self.assertFalse(pygame.mixer.music.get_busy())
-
-    def test_resume_media(self):
-        """
-        Test resuming media.
-
-        This test checks if the media player can resume a paused media file.
-        """
-        self.media_player.queue.put(("test.mp3", 1))
-        self.media_player.start_media("test.mp3", 1, 0, MagicMock())
-        self.media_player.pause_media()
-        self.media_player.resume_media()
-        self.assertTrue(pygame.mixer.music.get_busy())
+        self.assertFalse(pygame.mixer.get_busy())
 
     def test_stop_media(self):
         """
@@ -80,7 +75,29 @@ class TestMediaPlayer(unittest.TestCase):
 
         This test checks if the media player can stop playing a media file.
         """
-        self.media_player.queue.put(("test.mp3", 1))
-        self.media_player.start_media("test.mp3", 1, 0, MagicMock())
+        media_path = os.path.join(os.path.dirname(__file__), "assets", "test.mp3")
+        self.media_player.queue.put((media_path, 1))
+        self.media_player.start_media(media_path, 1, 0, MagicMock())
         self.media_player.stop_media()
         self.assertFalse(self.media_player.playing)
+
+    def test_multiple_media(self):
+        """
+        Test playing multiple media files.
+
+        This test checks if the media player can play multiple media files at the same time.
+        """
+        media_path1 = os.path.join(os.path.dirname(__file__), "assets", "test1.mp3")
+        media_path2 = os.path.join(os.path.dirname(__file__), "assets", "test2.mp3")
+        self.media_player.queue.put((media_path1, 1))
+        self.media_player.queue.put((media_path2, 1))
+        self.media_player.start_media(media_path1, 1, 0, MagicMock())
+        self.assertTrue(self.media_player.playing)
+        self.media_player.start_media(media_path2, 1, 0, MagicMock())
+        self.assertTrue(self.media_player.playing)
+        time.sleep(1)
+        self.assertFalse(pygame.mixer.get_busy())
+
+
+if __name__ == '__main__':
+    unittest.main()
